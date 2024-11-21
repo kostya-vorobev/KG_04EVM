@@ -32,7 +32,7 @@ namespace WpfApp6
         private Model model;
         private float rotation = 0.0f;
         private uint[] texture = new uint[1];
-        private float eyeX = 0.0f, eyeY = 80.0f, eyeZ = 150.0f;
+        private float eyeX = 500.0f, eyeY = 200.0f, eyeZ = 200.0f;
         Texture tex = new Texture();
         private uint[] depthTexture = new uint[1];
         private int shadowWidth = 512;
@@ -65,11 +65,11 @@ namespace WpfApp6
                     gl.LookAt(eyeX, eyeY, eyeZ, 0, 0, 0, 0, 1, 0);
                     break;
                 case Key.W:
-                    eyeZ += 10.0f; // Двигать вправо
+                    eyeZ -= 10.0f; // Двигать вперед
                     gl.LookAt(eyeX, eyeY, eyeZ, 0, 0, 0, 0, 1, 0);
                     break;
                 case Key.S:
-                    eyeZ -= 10.0f; // Двигать вправо
+                    eyeZ += 10.0f; // Двигать назад
                     gl.LookAt(eyeX, eyeY, eyeZ, 0, 0, 0, 0, 1, 0);
                     break;
             }
@@ -80,7 +80,7 @@ namespace WpfApp6
             gl.GenTextures(1, depthTexture);
             gl.BindTexture(OpenGL.GL_TEXTURE_2D, depthTexture[0]);
             gl.TexImage2D(OpenGL.GL_TEXTURE_2D, 0, OpenGL.GL_DEPTH_COMPONENT24, shadowWidth, shadowHeight, 0,
-                OpenGL.GL_DEPTH_COMPONENT, OpenGL.GL_UNSIGNED_BYTE, IntPtr.Zero); // Используйте GL_DEPTH_COMPONENT24
+                OpenGL.GL_DEPTH_COMPONENT, OpenGL.GL_UNSIGNED_BYTE, IntPtr.Zero); 
             gl.TexParameter(OpenGL.GL_TEXTURE_2D, OpenGL.GL_TEXTURE_MIN_FILTER, OpenGL.GL_NEAREST);
             gl.TexParameter(OpenGL.GL_TEXTURE_2D, OpenGL.GL_TEXTURE_MAG_FILTER, OpenGL.GL_NEAREST);
             gl.TexParameter(OpenGL.GL_TEXTURE_2D, OpenGL.GL_TEXTURE_WRAP_S, OpenGL.GL_CLAMP_TO_EDGE);
@@ -94,7 +94,7 @@ namespace WpfApp6
             gl.BindTexture(OpenGL.GL_TEXTURE_2D, depthTexture[0]);
             gl.Clear(OpenGL.GL_DEPTH_BUFFER_BIT);
 
-            // Важно: обнуляем матрицы
+            // обнуляем матрицы
             gl.MatrixMode(OpenGL.GL_PROJECTION);
             gl.LoadIdentity();
             gl.Ortho(-100, 100, -100, 100, -100, 100); // Убедитесь, что размеры соответствуют сцене
@@ -198,18 +198,16 @@ namespace WpfApp6
 
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
             gl.LoadIdentity();
-            gl.Translate(0f, 0f, 0.5f);
+            gl.Translate(-20f, -20f, 0.5f);
             // Позиция камеры и вращение
             gl.LookAt(eyeX, eyeY, eyeZ, 0, 0, 0, 0, 1, 0);
             gl.Rotate(rotation, 0.0f, 1.0f, 0.0f);
-            //rotation += 1.0f; // Динамическое вращение
+            rotation += 1.0f; // Динамическое вращение
 
             // Отрисовка модели или примитивов
             if (model.Meshes.Count > 0)
             {
                 DrawModel();
-                
-                //DrawPrimitives();
             }
             else
             {
@@ -236,7 +234,6 @@ namespace WpfApp6
                 gl.Material(OpenGL.GL_FRONT, OpenGL.GL_DIFFUSE, material.DiffuseColor);
                 gl.Material(OpenGL.GL_FRONT, OpenGL.GL_SPECULAR, material.SpecularColor);
                 gl.Material(OpenGL.GL_FRONT, OpenGL.GL_SHININESS, new float[] { material.Shininess });
-                //gl.BindTexture(OpenGL.GL_TEXTURE_2D, texture[0]); // Применяем текстуру
 
                 gl.Begin(OpenGL.GL_TRIANGLES);
                 for (int i = 0; i < mesh.Faces.Count; i += 3)
@@ -254,7 +251,6 @@ namespace WpfApp6
                         }
                         else
                         {
-                            // Если текстурная координата не существует, указываем (0, 0)
                             gl.TexCoord(0.0f, 0.0f);
                         }
 
@@ -274,21 +270,30 @@ namespace WpfApp6
 
             gl.Enable(OpenGL.GL_LIGHTING);
             gl.Enable(OpenGL.GL_LIGHT0);
+            gl.Enable(OpenGL.GL_LIGHT1);
             gl.Enable(OpenGL.GL_COLOR_MATERIAL);
             //gl.Disable(OpenGL.GL_LIGHTING);
 
             LoadModel("J_Room.obj");
             
-            SetupShadowMapping(); // Настройка шадов
+            SetupShadowMapping(); 
             SetupLighting();
             RenderShadowMap();
         }
 
         private void SetupLighting()
         {
-            float[] fLightPosition = new float[4] { 0.0f, 0.0f, 0.0f, 1.0f }; //5f, 8f, -8f, 1f };//  Light source position 
-            float[] fLightAmbient = new float[4] { 0f, 0f, 0f, 1f };//  Ambient light parameters 
-            float[] fLightDiffuse = new float[4] { 1f, 1f, 1f, 1f };//  Diffuse light parameters
+            // Параметры первого источника света (основного)
+            float[] light0Position = new float[4] { 0.0f, 50.0f, 100.0f, 1.0f }; // Позиция источника света
+            float[] light0Ambient = new float[4] { 0.2f, 0.2f, 0.2f, 1.0f }; // Параметры окружающего света
+            float[] light0Diffuse = new float[4] { 1.0f, 1.0f, 1.0f, 1.0f }; // Параметры рассеянного света
+            float[] light0Specular = new float[4] { 1.0f, 1.0f, 1.0f, 1.0f }; // Параметры зеркального света
+
+            // Параметры второго источника света (акцентный)
+            float[] light1Position = new float[4] { 50.0f, 100.0f, 50.0f, 1.0f }; // Позиция источника света
+            float[] light1Ambient = new float[4] { 0.1f, 0.1f, 0.1f, 1.0f }; // Параметры окружающего света
+            float[] light1Diffuse = new float[4] { 0.8f, 0.8f, 0.8f, 1.0f }; // Параметры рассеянного света
+            float[] light1Specular = new float[4] { 0.8f, 0.8f, 0.8f, 1.0f }; // Параметры зеркального света
 
             gl.ClearColor(0.0f, 0.2f, 0.2f, 0.0f);
             gl.ClearDepth(1f);
@@ -296,9 +301,15 @@ namespace WpfApp6
             gl.Enable(OpenGL.GL_DEPTH_TEST);
             gl.ShadeModel(OpenGL.GL_SMOOTH);
 
-            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_AMBIENT, fLightAmbient);//Ambient light source 
-            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_DIFFUSE, fLightDiffuse);//Diffuse light source 
-            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, fLightPosition);//Light source position 
+            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_SPECULAR, light0Specular);
+            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_AMBIENT, light0Ambient);
+            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_DIFFUSE, light0Diffuse);
+            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0Position);
+
+            gl.Light(OpenGL.GL_LIGHT1, OpenGL.GL_SPECULAR, light1Specular);
+            gl.Light(OpenGL.GL_LIGHT1, OpenGL.GL_AMBIENT, light1Ambient);
+            gl.Light(OpenGL.GL_LIGHT1, OpenGL.GL_DIFFUSE, light1Diffuse);
+            gl.Light(OpenGL.GL_LIGHT1, OpenGL.GL_POSITION, light1Position);
         }
 
         private void DrawPrimitives()
@@ -353,7 +364,7 @@ namespace WpfApp6
             gl.LoadIdentity();
 
             // Увеличение дальности видимости
-            gl.Perspective(45.0f, (double)openGLControl.ActualWidth / openGLControl.ActualHeight, 0.1f, 500.0f);
+            gl.Perspective(45.0f, (double)openGLControl.ActualWidth / openGLControl.ActualHeight, 0.1f, 1000.0f);
             gl.MatrixMode(OpenGL.GL_MODELVIEW);
         }
     }
