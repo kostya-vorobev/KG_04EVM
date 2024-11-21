@@ -1,0 +1,13 @@
+﻿<Window x:Class="WpfApp6.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sharpGL="clr-namespace:SharpGL.WPF;assembly=SharpGL.WPF"
+        xmlns:local="clr-namespace:WpfApp6"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800" KeyDown="MainWindow_KeyDown">
+    <Grid>
+        <sharpGL:OpenGLControl x:Name="openGLControl"  Margin="10" OpenGLDraw="openGLControl_OpenGLDraw" Resized="openGLControl_Resized" OpenGLInitialized="openGLControl_OpenGLInitialized" Foreground="Black" />
+    </Grid>
+</Window>
