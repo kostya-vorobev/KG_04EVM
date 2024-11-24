@@ -32,7 +32,7 @@ namespace WpfApp6
         private Model model;
         private float rotation = 0.0f;
         private uint[] texture = new uint[1];
-        private float eyeX = 500.0f, eyeY = 200.0f, eyeZ = 200.0f;
+        private float eyeX = 300.0f, eyeY = 225.0f, eyeZ = 0.0f;
         Texture tex = new Texture();
         private uint[] depthTexture = new uint[1];
         private int shadowWidth = 512;
@@ -136,23 +136,56 @@ namespace WpfApp6
             // Инициализация модели
             model = new Model();
 
-            // Загружаем материалы
+          /*  // Загружаем материалы
             foreach (var material in scene.Materials)
             {
-                var newMaterial = new Material
-                {
-                    AmbientColor = new float[] { material.ColorAmbient.R, material.ColorAmbient.G, material.ColorAmbient.B, 1.0f },
-                    DiffuseColor = new float[] { material.ColorDiffuse.R, material.ColorDiffuse.G, material.ColorDiffuse.B, 1.0f },
-                    SpecularColor = new float[] { material.ColorSpecular.R, material.ColorSpecular.G, material.ColorSpecular.B, 1.0f },
-                    Shininess = material.Shininess
-                };
 
-                model.Materials.Add(newMaterial);
-            }
+                    var newMaterial = new Material
+                    {
+                        AmbientColor = new float[] { material.ColorAmbient.R, material.ColorAmbient.G, material.ColorAmbient.B, 1.0f },
+                        DiffuseColor = new float[] { material.ColorDiffuse.R, material.ColorDiffuse.G, material.ColorDiffuse.B, 1.0f },
+                        SpecularColor = new float[] { material.ColorSpecular.R, material.ColorSpecular.G, material.ColorSpecular.B, 1.0f },
+                        Shininess = material.Shininess
+                    };
 
+                    // Проверяем наличие текстуры диффузного цвета
+                    if (material.Name != "")
+                    {
+                        newMaterial.TextureName = material.Name;
+                    }
+                    else
+                    {
+                        newMaterial.TextureName = "DefaultMaterial";
+                    }
+
+                    model.Materials.Add(newMaterial);
+                
+            }*/
+
+            // Загружаем меши
             foreach (var mesh in scene.Meshes)
             {
                 var newMesh = new Mesh();
+
+                var newMaterial = new Material
+                {
+                    AmbientColor = new float[] { scene.Materials[mesh.MaterialIndex].ColorAmbient.R, scene.Materials[mesh.MaterialIndex].ColorAmbient.G, scene.Materials[mesh.MaterialIndex].ColorAmbient.B, 1.0f },
+                    DiffuseColor = new float[] { scene.Materials[mesh.MaterialIndex].ColorDiffuse.R, scene.Materials[mesh.MaterialIndex].ColorDiffuse.G, scene.Materials[mesh.MaterialIndex].ColorDiffuse.B, 1.0f },
+                    SpecularColor = new float[] { scene.Materials[mesh.MaterialIndex].ColorSpecular.R, scene.Materials[mesh.MaterialIndex].ColorSpecular.G, scene.Materials[mesh.MaterialIndex].ColorSpecular.B, 1.0f },
+                    Shininess = scene.Materials[mesh.MaterialIndex].Shininess
+                };
+
+                // Проверяем наличие текстуры диффузного цвета
+                if (scene.Materials[mesh.MaterialIndex].Name != "")
+                {
+                    newMaterial.TextureName = scene.Materials[mesh.MaterialIndex].Name;
+                }
+                else
+                {
+                    newMaterial.TextureName = "DefaultMaterial";
+                }
+
+                model.Materials.Add(newMaterial);
 
                 // Загружаем вершины
                 foreach (var vertex in mesh.Vertices)
@@ -162,10 +195,13 @@ namespace WpfApp6
                 }
 
                 // Загружаем текстурные координаты
-                foreach (var texCoord in mesh.TextureCoordinateChannels[0]) // Берем первую текстурную координату
+                if (mesh.TextureCoordinateChannelCount > 0)
                 {
-                    var t = new Vector2((float)texCoord.X, (float)texCoord.Y);
-                    newMesh.TextureCoordinates.Add(t);
+                    foreach (var texCoord in mesh.TextureCoordinateChannels[0]) // Берем первую текстурную координату
+                    {
+                        var t = new Vector2((float)texCoord.X, (float)texCoord.Y);
+                        newMesh.TextureCoordinates.Add(t);
+                    }
                 }
 
                 // Загружаем индексы для отрисовки
@@ -176,7 +212,7 @@ namespace WpfApp6
                         newMesh.Faces.Add(index);
                     }
                 }
-
+                newMesh.MaterialIndex = mesh.MaterialIndex;
                 model.Meshes.Add(newMesh);
             }
         }
@@ -184,7 +220,7 @@ namespace WpfApp6
         private void LoadTexture(string filePath)
         {
             if (!File.Exists(filePath))
-                throw new FileNotFoundException("Texture file not found.", filePath);
+                filePath = "J_Room/DefaultMaterial.jpg";
 
             Bitmap bmp = new Bitmap(filePath);
             tex.Create(gl, bmp);
@@ -202,7 +238,7 @@ namespace WpfApp6
             // Позиция камеры и вращение
             gl.LookAt(eyeX, eyeY, eyeZ, 0, 0, 0, 0, 1, 0);
             gl.Rotate(rotation, 0.0f, 1.0f, 0.0f);
-            rotation += 1.0f; // Динамическое вращение
+            //rotation += 10.0f; // Динамическое вращение
 
             // Отрисовка модели или примитивов
             if (model.Meshes.Count > 0)
@@ -223,11 +259,13 @@ namespace WpfApp6
 
             foreach (var mesh in model.Meshes)
             {
-                if (iTex < 6)
-                LoadTexture("J_Room/"+iTex.ToString()+".jpg");
-                tex.Bind(gl);
+                
+                    
+                LoadTexture("J_Room/"+model.Materials[iTex].TextureName+".jpg");
                 iTex++;
-                Material material = model.Materials[mesh.MaterialIndex];
+                tex.Bind(gl);
+                
+                Material material = model.Materials[mesh.MaterialIndex-1];
 
                 // Устанавливаем материал
                 gl.Material(OpenGL.GL_FRONT, OpenGL.GL_AMBIENT, material.AmbientColor);
@@ -285,9 +323,9 @@ namespace WpfApp6
         {
             // Параметры первого источника света (основного)
             float[] light0Position = new float[4] { 0.0f, 50.0f, 100.0f, 1.0f }; // Позиция источника света
-            float[] light0Ambient = new float[4] { 0.2f, 0.2f, 0.2f, 1.0f }; // Параметры окружающего света
-            float[] light0Diffuse = new float[4] { 1.0f, 1.0f, 1.0f, 1.0f }; // Параметры рассеянного света
-            float[] light0Specular = new float[4] { 1.0f, 1.0f, 1.0f, 1.0f }; // Параметры зеркального света
+            float[] light0Ambient = new float[4] { 0.2f, 0.2f, 0.2f, 10.0f }; // Параметры окружающего света
+            float[] light0Diffuse = new float[4] { 1.0f, 1.0f, 1.0f, 10.0f }; // Параметры рассеянного света
+            float[] light0Specular = new float[4] { 1.0f, 1.0f, 1.0f, 10.0f }; // Параметры зеркального света
 
             // Параметры второго источника света (акцентный)
             float[] light1Position = new float[4] { 50.0f, 100.0f, 50.0f, 1.0f }; // Позиция источника света
@@ -387,6 +425,7 @@ namespace WpfApp6
         public float[] SpecularColor { get; set; }
         public float Shininess { get; set; }
         public uint TextureId { get; set; }
+        public string TextureName { get; set; }
 
         public Material()
         {
